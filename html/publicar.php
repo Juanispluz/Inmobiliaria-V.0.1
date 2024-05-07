@@ -22,7 +22,7 @@ if (!isset($_SESSION['usuario'])) {
         <textarea id="descripcion" name="descripcion" required></textarea>
 
         <label for="precio">Precio:</label>
-        <input type="number" id="precio" name="precio" step="0.01" required>
+        <input type="number" id="precio" name="precio" min="0" step="0.01" required>
 
         <label for="imagen">Imagen:</label>
         <input type="file" id="imagen" name="imagen" required>

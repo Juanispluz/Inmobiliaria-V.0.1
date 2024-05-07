@@ -1,25 +1,39 @@
 <?php
 session_start();
-require 'php/conexion.php'; // Incluir el archivo de conexión
+require 'php/conexion.php'; // Archivo de conexión
 
-// Consulta SQL para obtener las propiedades en orden descendente
-$query = "SELECT * FROM propiedades ORDER BY id DESC";
-$resultado = $conexion->query($query);
+$usuarioId = isset($_SESSION['usuario']) ? $_SESSION['usuario'] : null;
 
-// Verificar si la consulta fue exitosa
+// Inicia la consulta con la cláusula SELECT
+$query = "SELECT propiedades.*, usuarios.nombre AS arrendador_nombre FROM propiedades
+          LEFT JOIN usuarios ON propiedades.usuario_arrendador_id = usuarios.id";
+
+// Añade condiciones específicas para el usuario o por defecto para usuarios no logueados
+if ($usuarioId) {
+    $query .= " WHERE propiedades.usuario_publicador_id = ? OR propiedades.usuario_arrendador_id = ? OR propiedades.arrendada = 0";
+} else {
+    $query .= " WHERE propiedades.arrendada = 0";
+}
+
+// Importante: Añadir la cláusula ORDER BY al final de todas las condiciones
+$query .= " ORDER BY propiedades.id DESC";
+
+// Preparar la consulta según sea el caso con o sin usuario logueado
+if ($usuarioId) {
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("ii", $usuarioId, $usuarioId); // Doble bind_param si el usuario está logueado
+} else {
+    $stmt = $conexion->prepare($query);
+}
+
+// Ejecutar la consulta
+$stmt->execute();
+$resultado = $stmt->get_result();
+
 if (!$resultado) {
     die("Error en la consulta: " . $conexion->error);
 }
-
-// Opcional: Procesar los resultados aquí o en otra parte del script
-// while ($fila = $resultado->fetch_assoc()) {
-//     echo "Propiedad ID: " . $fila['id'] . " - Nombre: " . $fila['nombre'] . "<br>";
-// }
-
-// Cerrar la conexión
-$conexion->close();
 ?>
-
 
 <!DOCTYPE html>
 <html>
@@ -42,18 +56,24 @@ $conexion->close();
             <img src="<?php echo 'imagenes/' . htmlspecialchars(basename($propiedad['imagen'])); ?>" alt="Imagen de la propiedad" width="200">
             <p><?php echo htmlspecialchars($propiedad['descripcion']); ?></p>
             <p>Precio: $<?php echo htmlspecialchars($propiedad['precio']); ?></p>
-            <?php if (!$propiedad['arrendada']): ?>
+            
+            <?php if (!$propiedad['arrendada'] && (!isset($_SESSION['usuario']) || $_SESSION['usuario'] != $propiedad['usuario_publicador_id'])): ?>
                 <button onclick="arrendarPropiedad(<?php echo $propiedad['id']; ?>)">Arrendar</button>
-            <?php else: ?>
+            <?php elseif ($propiedad['arrendada']): ?>
                 <p>Esta propiedad está arrendada desde <?php echo date('d-m-Y', strtotime($propiedad['fecha_arrendada'])); ?></p>
                 <?php if (isset($_SESSION['usuario']) && $propiedad['usuario_arrendador_id'] == $_SESSION['usuario']): ?>
                     <button onclick="cancelarArriendo(<?php echo $propiedad['id']; ?>)">Cancelar Arriendo</button>
                 <?php endif; ?>
             <?php endif; ?>
-            <a href="html/detalles.php?id=<?php echo $propiedad['id']; ?>">Ver Detalles</a>
+
+            <?php if (isset($_SESSION['usuario']) && $propiedad['usuario_publicador_id'] == $_SESSION['usuario']): ?>
+                <button onclick="eliminarPropiedad(<?php echo $propiedad['id']; ?>)">Eliminar</button>
+            <?php endif; ?>
+            
+            <a href="detalles.php?id=<?php echo $propiedad['id']; ?>">Ver Detalles</a>
         </div>
     <?php endwhile; ?>
 
-    <script src="js/index.js"></script>
+    <script src="js/parametros.js"></script>
 </body>
 </html>

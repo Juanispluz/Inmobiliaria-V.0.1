@@ -1,8 +1,8 @@
 <?php
 session_start();
-require 'conexion.php'; // Utilizar un archivo separado para la conexión
+require 'conexion.php'; // Archivo de conexión
 
-// Asegurarse de que los datos necesarios están presentes
+// Datos para el login
 if (!isset($_POST['email'], $_POST['contrasena'])) {
     echo "Todos los campos son necesarios.";
     exit;
@@ -23,7 +23,7 @@ if ($resultado->num_rows > 0) {
     // Verificar la contraseña
     if (password_verify($contrasena, $usuario['contrasena'])) {
         // Establecer la variable de sesión para el usuario
-        $_SESSION['usuario'] = $usuario['id']; // Asume que 'id' es la columna que contiene el ID del usuario
+        $_SESSION['usuario'] = $usuario['id']; // 'id' de la usuarios
 
         // Redireccionar al usuario a la página principal
         header("Location: ../index.php");

@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'conexion.php'; // Incluir el archivo de conexión
+require 'conexion.php'; // Archivo de conexión
 
 if (!isset($_SESSION['usuario'])) {
     header("Location: ../html/login.php");
